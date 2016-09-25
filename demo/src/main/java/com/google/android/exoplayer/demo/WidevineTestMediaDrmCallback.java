@@ -51,6 +51,8 @@ public class WidevineTestMediaDrmCallback implements MediaDrmCallback {
   @Override
   public byte[] executeKeyRequest(UUID uuid, KeyRequest request) throws IOException {
     String url = request.getDefaultUrl();
+    //url += "&SubContentType=AC&SessionId=C34E1A932885A15A&Ticket=A281E318490B3327";
+    url = "https://foxtelott.live.ott.irdeto.com/playready/rightsmanager.asmx?CrmId=foxtelott&AccountId=foxtelott&ContentId=SEVASSMBRO003&SubContentType=AC&SessionId=C34E1A932885A15A&Ticket=A281E318490B3327";
     if (TextUtils.isEmpty(url)) {
       url = defaultUri;
     }

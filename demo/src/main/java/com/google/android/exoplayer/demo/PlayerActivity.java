@@ -87,6 +87,10 @@ public class PlayerActivity extends Activity implements SurfaceHolder.Callback, 
   public static final String CONTENT_ID_EXTRA = "content_id";
   public static final String CONTENT_TYPE_EXTRA = "content_type";
   public static final String PROVIDER_EXTRA = "provider";
+  public static final String DRM_TYPE_EXTRA = "drm_type";
+
+  public static final String DRM_TYPE_PLAYREADY = "playready";
+  public static final String DRM_TYPE_WIDEVINE = "widevine";
 
   // For use when launching the demo app using adb.
   private static final String CONTENT_EXT_EXTRA = "type";
@@ -94,6 +98,9 @@ public class PlayerActivity extends Activity implements SurfaceHolder.Callback, 
   private static final String TAG = "PlayerActivity";
   private static final int MENU_GROUP_TRACKS = 1;
   private static final int ID_OFFSET = 2;
+
+    private static final int DEFAULT_JUMP_DISTANCE_SMALL_MS = 15000;
+    private static final int DEFAULT_JUMP_DISTANCE_BIG_MS = 60 * 10 * 1000; // 10 minutes
 
   private static final CookieManager defaultCookieManager;
   static {
@@ -126,6 +133,7 @@ public class PlayerActivity extends Activity implements SurfaceHolder.Callback, 
   private int contentType;
   private String contentId;
   private String provider;
+  private String drmType;
 
   private AudioCapabilitiesReceiver audioCapabilitiesReceiver;
 
@@ -199,10 +207,10 @@ public class PlayerActivity extends Activity implements SurfaceHolder.Callback, 
     super.onResume();
     Intent intent = getIntent();
     contentUri = intent.getData();
-    contentType = intent.getIntExtra(CONTENT_TYPE_EXTRA,
-        inferContentType(contentUri, intent.getStringExtra(CONTENT_EXT_EXTRA)));
+    contentType = intent.getIntExtra(CONTENT_TYPE_EXTRA, inferContentType(contentUri, intent.getStringExtra(CONTENT_EXT_EXTRA)));
     contentId = intent.getStringExtra(CONTENT_ID_EXTRA);
     provider = intent.getStringExtra(PROVIDER_EXTRA);
+    drmType = intent.getStringExtra(DRM_TYPE_EXTRA);
     configureSubtitleView();
     if (player == null) {
       if (!maybeRequestPermission()) {
@@ -257,8 +265,7 @@ public class PlayerActivity extends Activity implements SurfaceHolder.Callback, 
   // Permission request listener method
 
   @Override
-  public void onRequestPermissionsResult(int requestCode, String[] permissions,
-      int[] grantResults) {
+  public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
     if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
       preparePlayer(true);
     } else {
@@ -300,13 +307,15 @@ public class PlayerActivity extends Activity implements SurfaceHolder.Callback, 
     String userAgent = Util.getUserAgent(this, "ExoPlayerDemo");
     switch (contentType) {
       case Util.TYPE_SS:
-        return new SmoothStreamingRendererBuilder(this, userAgent, contentUri.toString(),
-            new SmoothStreamingTestMediaDrmCallback());
+        return new SmoothStreamingRendererBuilder(this, userAgent, contentUri.toString(), new SmoothStreamingTestMediaDrmCallback());
       case Util.TYPE_DASH:
-        return new DashRendererBuilder(this, userAgent, contentUri.toString(),
-            new WidevineTestMediaDrmCallback(contentId, provider));
+        if( drmType.equals(DRM_TYPE_PLAYREADY) ) {
+          return new DashRendererBuilder(this, userAgent, contentUri.toString(), new SmoothStreamingTestMediaDrmCallback(), DashRendererBuilder.DRM_TYPE_PLAYREADY);
+        } else {
+          return new DashRendererBuilder(this, userAgent, contentUri.toString(), new WidevineTestMediaDrmCallback(contentId, provider), DashRendererBuilder.DRM_TYPE_WIDEVINE);
+        }
       case Util.TYPE_HLS:
-        return new HlsRendererBuilder(this, userAgent, contentUri.toString());
+        return new HlsRendererBuilder(this, userAgent, contentUri.toString(), new SmoothStreamingTestMediaDrmCallback());
       case Util.TYPE_OTHER:
         return new ExtractorRendererBuilder(this, userAgent, contentUri);
       default:
@@ -366,6 +375,9 @@ public class PlayerActivity extends Activity implements SurfaceHolder.Callback, 
         text += "buffering";
         break;
       case ExoPlayer.STATE_ENDED:
+          player.seekTo(0); // milliseconds
+          toggleControlsVisibility();
+          //show();
         text += "ended";
         break;
       case ExoPlayer.STATE_IDLE:
@@ -682,8 +694,7 @@ public class PlayerActivity extends Activity implements SurfaceHolder.Callback, 
    * @return The inferred type.
    */
   private static int inferContentType(Uri uri, String fileExtension) {
-    String lastPathSegment = !TextUtils.isEmpty(fileExtension) ? "." + fileExtension
-        : uri.getLastPathSegment();
+    String lastPathSegment = !TextUtils.isEmpty(fileExtension) ? "." + fileExtension : uri.getLastPathSegment();
     return Util.inferContentType(lastPathSegment);
   }
 
@@ -704,20 +715,27 @@ public class PlayerActivity extends Activity implements SurfaceHolder.Callback, 
     @Override
     public boolean dispatchKeyEvent(KeyEvent event) {
       int keyCode = event.getKeyCode();
-      if (playerControl.canSeekForward() && keyCode == KeyEvent.KEYCODE_MEDIA_FAST_FORWARD) {
+        int jump = DEFAULT_JUMP_DISTANCE_SMALL_MS;
+
+        return super.dispatchKeyEvent(event);
+
+/*      if (playerControl.canSeekForward() && (keyCode == KeyEvent.KEYCODE_MEDIA_FAST_FORWARD || keyCode == KeyEvent.KEYCODE_DPAD_RIGHT || keyCode == KeyEvent.KEYCODE_DPAD_UP) ) {
         if (event.getAction() == KeyEvent.ACTION_DOWN) {
-          playerControl.seekTo(playerControl.getCurrentPosition() + 15000); // milliseconds
+            if( keyCode == KeyEvent.KEYCODE_DPAD_UP ) jump = DEFAULT_JUMP_DISTANCE_BIG_MS;
+
+          playerControl.seekTo(playerControl.getCurrentPosition() + jump); // milliseconds
           show();
         }
         return true;
-      } else if (playerControl.canSeekBackward() && keyCode == KeyEvent.KEYCODE_MEDIA_REWIND) {
+      } else if ( playerControl.canSeekBackward() && (keyCode == KeyEvent.KEYCODE_MEDIA_REWIND || keyCode == KeyEvent.KEYCODE_DPAD_LEFT || keyCode == KeyEvent.KEYCODE_DPAD_DOWN ) ) {
         if (event.getAction() == KeyEvent.ACTION_DOWN) {
-          playerControl.seekTo(playerControl.getCurrentPosition() - 5000); // milliseconds
+            if( keyCode == KeyEvent.KEYCODE_DPAD_DOWN ) jump = DEFAULT_JUMP_DISTANCE_BIG_MS;
+          playerControl.seekTo(playerControl.getCurrentPosition() - jump); // milliseconds
           show();
         }
         return true;
       }
-      return super.dispatchKeyEvent(event);
+      return super.dispatchKeyEvent(event);*/
     }
   }
 

@@ -62,6 +62,9 @@ public class DashRendererBuilder implements RendererBuilder {
 
   private static final String TAG = "DashRendererBuilder";
 
+  public static final String DRM_TYPE_PLAYREADY = "playready";
+  public static final String DRM_TYPE_WIDEVINE = "widevine";
+
   private static final int BUFFER_SEGMENT_SIZE = 64 * 1024;
   private static final int VIDEO_BUFFER_SEGMENTS = 200;
   private static final int AUDIO_BUFFER_SEGMENTS = 54;
@@ -76,20 +79,21 @@ public class DashRendererBuilder implements RendererBuilder {
   private final String userAgent;
   private final String url;
   private final MediaDrmCallback drmCallback;
+  private final String drmType;
 
   private AsyncRendererBuilder currentAsyncBuilder;
 
-  public DashRendererBuilder(Context context, String userAgent, String url,
-      MediaDrmCallback drmCallback) {
+  public DashRendererBuilder(Context context, String userAgent, String url, MediaDrmCallback drmCallback, String drmType) {
     this.context = context;
     this.userAgent = userAgent;
     this.url = url;
     this.drmCallback = drmCallback;
+    this.drmType = drmType;
   }
 
   @Override
   public void buildRenderers(DemoPlayer player) {
-    currentAsyncBuilder = new AsyncRendererBuilder(context, userAgent, url, drmCallback, player);
+    currentAsyncBuilder = new AsyncRendererBuilder(context, userAgent, url, drmCallback, player, drmType);
     currentAsyncBuilder.init();
   }
 
@@ -106,6 +110,7 @@ public class DashRendererBuilder implements RendererBuilder {
 
     private final Context context;
     private final String userAgent;
+    private final String drmType;
     private final MediaDrmCallback drmCallback;
     private final DemoPlayer player;
     private final ManifestFetcher<MediaPresentationDescription> manifestFetcher;
@@ -116,9 +121,10 @@ public class DashRendererBuilder implements RendererBuilder {
     private long elapsedRealtimeOffset;
 
     public AsyncRendererBuilder(Context context, String userAgent, String url,
-        MediaDrmCallback drmCallback, DemoPlayer player) {
+        MediaDrmCallback drmCallback, DemoPlayer player, String drmType) {
       this.context = context;
       this.userAgent = userAgent;
+      this.drmType = drmType;
       this.drmCallback = drmCallback;
       this.player = player;
       MediaPresentationDescriptionParser parser = new MediaPresentationDescriptionParser();
@@ -203,9 +209,14 @@ public class DashRendererBuilder implements RendererBuilder {
           return;
         }
         try {
-          drmSessionManager = StreamingDrmSessionManager.newWidevineInstance(
-              player.getPlaybackLooper(), drmCallback, null, player.getMainHandler(), player);
-          filterHdContent = getWidevineSecurityLevel(drmSessionManager) != SECURITY_LEVEL_1;
+          if( drmType.equals(DRM_TYPE_PLAYREADY) ) {
+            drmSessionManager = StreamingDrmSessionManager.newPlayReadyInstance(player.getPlaybackLooper(), drmCallback, null, player.getMainHandler(), player);
+          } else {
+            drmSessionManager = StreamingDrmSessionManager.newWidevineInstance(player.getPlaybackLooper(), drmCallback, null, player.getMainHandler(), player);
+            filterHdContent = getWidevineSecurityLevel(drmSessionManager) != SECURITY_LEVEL_1;
+
+          }
+
         } catch (UnsupportedDrmException e) {
           player.onRenderersError(e);
           return;

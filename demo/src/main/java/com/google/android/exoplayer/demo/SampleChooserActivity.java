@@ -51,6 +51,9 @@ public class SampleChooserActivity extends Activity {
     group = new SampleGroup("Widevine DASH Policy Tests (GTS)");
     group.addAll(Samples.WIDEVINE_GTS);
     sampleGroups.add(group);
+    group = new SampleGroup("Playready DASH: MP4,H264");
+    group.addAll(Samples.PLAYREADY_H264_MP4_ENC);
+    sampleGroups.add(group);
     group = new SampleGroup("Widevine HDCP Capabilities Tests");
     group.addAll(Samples.WIDEVINE_HDCP);
     sampleGroups.add(group);
@@ -92,7 +95,8 @@ public class SampleChooserActivity extends Activity {
         .setData(Uri.parse(sample.uri))
         .putExtra(PlayerActivity.CONTENT_ID_EXTRA, sample.contentId)
         .putExtra(PlayerActivity.CONTENT_TYPE_EXTRA, sample.type)
-        .putExtra(PlayerActivity.PROVIDER_EXTRA, sample.provider);
+        .putExtra(PlayerActivity.PROVIDER_EXTRA, sample.provider)
+        .putExtra(PlayerActivity.DRM_TYPE_EXTRA, sample.drmType);
     startActivity(mpdIntent);
   }
 

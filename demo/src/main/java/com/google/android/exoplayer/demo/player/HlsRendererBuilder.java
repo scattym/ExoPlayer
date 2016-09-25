@@ -23,6 +23,9 @@ import com.google.android.exoplayer.MediaCodecVideoTrackRenderer;
 import com.google.android.exoplayer.TrackRenderer;
 import com.google.android.exoplayer.audio.AudioCapabilities;
 import com.google.android.exoplayer.demo.player.DemoPlayer.RendererBuilder;
+import com.google.android.exoplayer.drm.MediaDrmCallback;
+import com.google.android.exoplayer.drm.StreamingDrmSessionManager;
+import com.google.android.exoplayer.drm.UnsupportedDrmException;
 import com.google.android.exoplayer.hls.DefaultHlsTrackSelector;
 import com.google.android.exoplayer.hls.HlsChunkSource;
 import com.google.android.exoplayer.hls.HlsMasterPlaylist;
@@ -41,6 +44,7 @@ import com.google.android.exoplayer.upstream.DefaultBandwidthMeter;
 import com.google.android.exoplayer.upstream.DefaultUriDataSource;
 import com.google.android.exoplayer.util.ManifestFetcher;
 import com.google.android.exoplayer.util.ManifestFetcher.ManifestCallback;
+import com.google.android.exoplayer.util.Util;
 
 import android.content.Context;
 import android.media.AudioManager;
@@ -62,18 +66,20 @@ public class HlsRendererBuilder implements RendererBuilder {
   private final Context context;
   private final String userAgent;
   private final String url;
+  private final MediaDrmCallback drmCallback;
 
   private AsyncRendererBuilder currentAsyncBuilder;
 
-  public HlsRendererBuilder(Context context, String userAgent, String url) {
+  public HlsRendererBuilder(Context context, String userAgent, String url, MediaDrmCallback drmCallback) {
     this.context = context;
     this.userAgent = userAgent;
     this.url = url;
+    this.drmCallback = drmCallback;
   }
 
   @Override
   public void buildRenderers(DemoPlayer player) {
-    currentAsyncBuilder = new AsyncRendererBuilder(context, userAgent, url, player);
+    currentAsyncBuilder = new AsyncRendererBuilder(context, userAgent, url, drmCallback, player);
     currentAsyncBuilder.init();
   }
 
@@ -92,14 +98,16 @@ public class HlsRendererBuilder implements RendererBuilder {
     private final String url;
     private final DemoPlayer player;
     private final ManifestFetcher<HlsPlaylist> playlistFetcher;
+    private final MediaDrmCallback drmCallback;
 
     private boolean canceled;
 
-    public AsyncRendererBuilder(Context context, String userAgent, String url, DemoPlayer player) {
+    public AsyncRendererBuilder(Context context, String userAgent, String url, MediaDrmCallback drmCallback, DemoPlayer player) {
       this.context = context;
       this.userAgent = userAgent;
       this.url = url;
       this.player = player;
+      this.drmCallback = drmCallback;
       HlsPlaylistParser parser = new HlsPlaylistParser();
       playlistFetcher = new ManifestFetcher<>(url, new DefaultUriDataSource(context, userAgent),
           parser);
@@ -133,6 +141,25 @@ public class HlsRendererBuilder implements RendererBuilder {
       DefaultBandwidthMeter bandwidthMeter = new DefaultBandwidthMeter();
       PtsTimestampAdjusterProvider timestampAdjusterProvider = new PtsTimestampAdjusterProvider();
 
+      // Check drm support if necessary.
+      boolean filterHdContent = false;
+      StreamingDrmSessionManager drmSessionManager = null;
+      if (true) {
+        if (Util.SDK_INT < 18) {
+          player.onRenderersError(
+                  new UnsupportedDrmException(UnsupportedDrmException.REASON_UNSUPPORTED_SCHEME));
+          return;
+        }
+        try {
+          drmSessionManager =
+          drmSessionManager = StreamingDrmSessionManager.newPlayReadyInstance(player.getPlaybackLooper(), drmCallback, null, player.getMainHandler(), player);
+          //filterHdContent = getWidevineSecurityLevel(drmSessionManager) != SECURITY_LEVEL_1;
+        } catch (UnsupportedDrmException e) {
+          player.onRenderersError(e);
+          return;
+        }
+      }
+
       // Build the video/audio/metadata renderers.
       DataSource dataSource = new DefaultUriDataSource(context, bandwidthMeter, userAgent);
       HlsChunkSource chunkSource = new HlsChunkSource(true /* isMaster */, dataSource, url,
@@ -142,9 +169,9 @@ public class HlsRendererBuilder implements RendererBuilder {
           MAIN_BUFFER_SEGMENTS * BUFFER_SEGMENT_SIZE, mainHandler, player, DemoPlayer.TYPE_VIDEO);
       MediaCodecVideoTrackRenderer videoRenderer = new MediaCodecVideoTrackRenderer(context,
           sampleSource, MediaCodecSelector.DEFAULT, MediaCodec.VIDEO_SCALING_MODE_SCALE_TO_FIT,
-          5000, mainHandler, player, 50);
+          5000, drmSessionManager, true, mainHandler, player, 50);
       MediaCodecAudioTrackRenderer audioRenderer = new MediaCodecAudioTrackRenderer(sampleSource,
-          MediaCodecSelector.DEFAULT, null, true, player.getMainHandler(), player,
+          MediaCodecSelector.DEFAULT, drmSessionManager, true, player.getMainHandler(), player,
           AudioCapabilities.getCapabilities(context), AudioManager.STREAM_MUSIC);
       MetadataTrackRenderer<List<Id3Frame>> id3Renderer = new MetadataTrackRenderer<>(
           sampleSource, new Id3Parser(), player, mainHandler.getLooper());

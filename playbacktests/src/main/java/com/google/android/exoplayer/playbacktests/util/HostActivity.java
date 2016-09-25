@@ -17,6 +17,7 @@ package com.google.android.exoplayer.playbacktests.util;
 
 import static junit.framework.Assert.fail;
 
+//import com.google.android.exoplayer.playbacktests.*;
 import com.google.android.exoplayer.playbacktests.R;
 import com.google.android.exoplayer.util.Assertions;
 import com.google.android.exoplayer.util.Util;
