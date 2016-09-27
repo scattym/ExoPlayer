@@ -90,8 +90,12 @@ import java.util.Locale;
   };
 
   public static final Sample[] PLAYREADY_H264_MP4_ENC = new Sample[] {
-          new Sample("Secure Mrs Brown's Boys: DASH with Playready DRM", "SEVASSMBRO003", "avaluetouse" ,"http://vod-st4.content.foxtel.com.au/store3/SEVASSMBRO003/SEVASSMBRO003_mpd_pr.ism/playlist.mpd", Util.TYPE_DASH, PlayerActivity.DRM_TYPE_PLAYREADY),
+          new Sample("Secure Mrs Brown's Boys: DASH with Playready DRM", "FXTL_ON257714", "avaluetouse" ,"http://test-vod-st4.content.foxtel.com.au/store2/ON257714/ON257714_mpd_pr.ism/playlist.mpd", Util.TYPE_DASH, PlayerActivity.DRM_TYPE_PLAYREADY),
           new Sample("Secure live smooth streaming with Playready DRM", "SS_513513", "avaluetouse" ,"http://liveabrtest.foxtelplayer.foxtel.com.au/channel012/channel012.isml/manifest", Util.TYPE_SS, PlayerActivity.DRM_TYPE_PLAYREADY),
+          new Sample("Clear live stream", "http://test-live1.content.foxtel.com.au/live/channel006/channel006_mpd.isml/playlist.mpd", Util.TYPE_DASH),
+          new Sample("Clear live stream mc", "http://test-live1.content.foxtel.com.au/live/channel006/channel006_mpd_mc.isml/playlist.mpd", Util.TYPE_DASH),
+          new Sample("Clear live stream ac3", "http://test-live1.content.foxtel.com.au/live/channel006/channel006_mpd_ac3.isml/playlist.mpd", Util.TYPE_DASH),
+
 
   };
 

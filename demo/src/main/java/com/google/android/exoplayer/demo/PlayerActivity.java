@@ -385,6 +385,12 @@ public class PlayerActivity extends Activity implements SurfaceHolder.Callback, 
         break;
       case ExoPlayer.STATE_PREPARING:
         text += "preparing";
+        /*Log.e(TAG, "playbackState: preparing");
+        if (haveTracks(DemoPlayer.TYPE_TEXT)) {
+          Log.e(TAG, "Configuring Subtitles track 0");
+          //SubtitleReady = true;
+          player.selectTrack(DemoPlayer.TYPE_TEXT, 0);
+        }*/
         break;
       case ExoPlayer.STATE_READY:
         text += "ready";

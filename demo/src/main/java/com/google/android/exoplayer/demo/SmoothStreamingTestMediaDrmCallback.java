@@ -62,6 +62,9 @@ public class SmoothStreamingTestMediaDrmCallback implements MediaDrmCallback {
     url = "https://foxtelott.live.ott.irdeto.com/playready/rightsmanager.asmx?CrmId=foxtelott&AccountId=foxtelott&ContentId=SEVASSMBRO003&SubContentType=AC&SessionId=C34E1A932885A15A&Ticket=A281E318490B3327";
     url = "https://foxtelott.live.ott.irdeto.com/playready/rightsmanager.asmx?CrmId=foxtelott&AccountId=foxtelott&ContentId=SS_513513&SubContentType=AC&SessionId=054685AE10BB408C&Ticket=8E3FDFACD8414EBD";
 
+    url = "http://sftl2.stage.ott.irdeto.com/playready/rightsmanager.asmx?CrmId=foxtelott&AccountId=foxtelott&ContentId=FXTL_ON257714&SubContentType=AC&SessionId=38F554AE89897147&Ticket=C64420BC7DED4E71";
+
+
     if (TextUtils.isEmpty(url)) {
       url = PLAYREADY_TEST_DEFAULT_URI + "?CrmId=foxtelott&AccountId=foxtelott&ContentId=SS_513513&SubContentType=AC&SessionId=054685AE10BB408C&Ticket=8E3FDFACD8414EBD";
     }
